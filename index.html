@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <title>Schach Live | Profi-Schach</title>
+    <meta name="description" content="Spiele Schach live gegen Freunde oder KI. Mit Echtzeit-Statistiken, Leaderboard und moderner Rust- & Python-Analyse.">
+    <meta name="keywords" content="Schach, Online-Schach, KI-Analyse, Rust, Python, Leaderboard, Online">
+
+    <meta property="og:title" content=" Schach Live---Spiele Schach gegen Freunde & KI und chatte">
+    <meta property="og:description" content="Komm vorbei und spiel eine Runde gegen meine KI oder andere!">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="https://max-code01.github.io/mein-schach/schach-vorschau.jpg">
+
+    <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    
+    <style>
+        #agb-popup {
+            display: none; /* Wird per JS aktiviert */
+            position: fixed;
+            z-index: 9999;
+            left: 0; top: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.9);
+            align-items: center; justify-content: center;
+            backdrop-filter: blur(5px);
+        }
+        .popup-content {
+            background: #1a1a1a;
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            max-width: 450px;
+            text-align: center;
+            border: 2px solid #28a745;
+            box-shadow: 0 0 20px rgba(40, 167, 69, 0.4);
+            font-family: sans-serif;
+        }
+        .popup-content h2 { color: #28a745; margin-top: 0; }
+        .popup-content a { color: #3498db; text-decoration: none; font-weight: bold; }
+        .accept-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.1em;
+            font-weight: bold;
+            margin-top: 20px;
+            transition: transform 0.2s;
+        }
+        .accept-btn:hover { transform: scale(1.05); }
+
+        /* Status Panel Styling */
+        .status-panel {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 10px;
+            padding: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .status-item {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9em;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #eee;
+        }
+        /* Letzter Zug Highlight */
+        .last-move {
+            background-color: rgba(241, 196, 15, 0.4) !important; /* Ein blasses Gelb */
+        }
+
+        /* Premove Highlight (Rot) */
+        .premove {
+            background-color: rgba(231, 76, 60, 0.5) !important; /* Ein sanftes Rot */
+        }
+        /* Styling für das Emote-Pop-up Menü */
+#emote-popup {
+    /* Sicherstellen, dass das Menü weich einblendet (optional) */
+    transition: opacity 0.2s ease;
+}
+
+/* Die einzelnen Buttons im Pop-up */
+.emote-btn {
+    transition: background-color 0.2s, color 0.2s;
+    color: #333; /* Dunkle Schrift auf weißem Grund */
+    font-weight: 500;
+}
+
+/* Effekt beim Drüberfahren mit der Maus */
+.emote-btn:hover {
+    background-color: #f0f0f0 !important; /* Hellgrauer Hintergrund */
+    color: #28a745 !important; /* Schrift wird grün wie dein AGB-Stil */
+}
+
+/* Der Button mit den drei Punkten (...) */
+#emote-menu-btn {
+    transition: all 0.2s;
+    outline: none;
+}
+
+#emote-menu-btn:hover {
+    background-color: #ddd !important;
+    border-color: #999 !important;
+}
+
+#emote-menu-btn:active {
+    transform: scale(0.95); /* Button drückt sich leicht ein beim Klick */
+}
+
+/* Damit die Emojis oben in der Leiste auch schön reagieren */
+.emoji-btn {
+    cursor: pointer;
+    padding: 2px;
+    transition: transform 0.1s;
+    display: inline-block;
+}
+
+.emoji-btn:hover {
+    transform: scale(1.3); /* Wird beim Drüberfahren größer */
+}
+        .view-video-btn {
+    background: #007bff;
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+    margin-top: 5px;
+    transition: background 0.3s;
+}
+
+.view-video-btn:hover {
+    background: #0056b3;
+}
+
+.video-entry {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 10px;
+    margin-bottom: 10px;
+    border-left: 4px solid #007bff;
+    border-radius: 4px;
+}
+    </style>
+
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js')
+        .then(reg => console.log('Service Worker registriert!', reg))
+        .catch(err => console.log('Service Worker Fehler:', err));
+    });
+  }
+</script>
+</head>
+<body>
+
+    <div id="agb-popup">
+        <div class="popup-content">
+            <h2>Willkommen bei Prochess!</h2>
+            <p>Um fortzufahren, bestätige bitte, dass du unsere <a href="AGB.html" target="_blank">AGB</a> und die <a href="datenschutz.html" target="_blank">Datenschutzerklärung</a> akzeptierst.</p>
+            <button class="accept-btn" onclick="acceptAGB()">Akzeptieren & Starten</button>
+        </div>
+    </div>
+
+
+    <div class="game-container">
+        <div class="board-section">
+            <h2 id="status-display">Weiß am Zug</h2>
+            <div id="chess-board"></div> 
+
+            <img src="schach-vorschau.jpg" alt="Max' Schach Live - Online Schachspiel Vorschau" style="display:none;">
+
+            <div class="control-row">
+                <button id="undoBtn">↩️ Rückgängig</button>
+                <button id="resetBtn">🆕 Neues Spiel</button>
+                <button id="resignBtn">🚩 Aufgeben</button>
+            </div>
+            <div id="videoFeed" class="video-container">
+    </div>
+
+
+            <div class="tech-under-board" style="margin-top: 30px; display: flex; flex-direction: column; gap: 15px;">
+
+                <div class="glass-panel" id="python-lab" style="border-left: 4px solid #3498db; width: 100%; box-sizing: border-box;">
+                    <span>🐍 <strong>KI-Analyse (Python-Labor)</strong></span>
+                    <div style="margin-top: 10px; font-size: 0.9em; display: flex; flex-direction: column; gap: 5px;">
+                        <div id="elo-display">Geschätzte Elo: <span style="color: #f1c40f;">Warte auf Spiel...</span></div>
+                        <div id="accuracy-display">Genauigkeit: 0%</div>
+                        <div id="aggro-display">Aggressivität: Normal</div>
+                        <div id="material-display">Gewonnenes Material: 0</div>
+                    </div>
+                </div>
+
+                <div class="status-panel">
+                    <div class="status-item">
+                        <span>📡 Server-Status:</span>
+                        <span id="server-status" style="color: #ff9800;">Verbinde...</span>
+                    </div>
+                    <div class="status-item">
+                        <span>⏱ Latenz (Ping):</span>
+                        <span id="ping-display" style="color: #00d4ff;">-- ms</span>
+                    </div>
+                </div>
+                <div class="video-area">
+    <input type="text" id="videoPrompt" placeholder="Was soll passieren?">
+    <button id="generateVideoBtn" onclick="startGeneration()">KI VIDEO GENERIEREN</button>
+    
+    <div id="videoStatus"></div>
+    
+    <div id="videoResultContainer"></div> 
+</div>
+
+            </div>
+        </div>
+        <div id="download-button-container" style="text-align: center; margin: 20px;">
+        <a href="https://github.com/Max-code01/mein-schach/releases/latest" style="background: #28a745; color: white; padding: 15px 25px; text-decoration: none; border-radius: 10px; font-weight: bold; display: inline-block;">
+            📥 Jetzt die Android-App (APK) laden
+        </a>
+    </div>
+        <div id="timer-container" style="font-size: 20px; font-weight: bold; color: #e74c3c; margin-top: 10px;">
+    Zeit für den Zug: <span id="move-timer">300</span>s
+                </div>
+        <div class="sidebar">
+            <div class="glass-panel">
+                <div class="user-info" style="display: flex; flex-direction: column; gap: 8px;">
+                    <span>👤 <strong>Spieler-Profil</strong></span>
+                    <input type="text" id="playerName" placeholder="Dein Name...">
+                    <input type="password" id="playerPass" placeholder="Passwort...">
+                    <button id="saveAccountBtn" style="background: #28a745; color: white; border: none; padding: 8px; border-radius: 8px; cursor: pointer; font-weight: bold;">
+                        🔒 Nick & Passwort sichern
+                    </button>
+                    <div id="save-status" style="font-size: 0.8em; text-align: center;"></div>
+                </div>
+                <div id="user-counter">Online: 1 ● Live</div>
+            </div>
+
+            <div class="glass-panel">
+                <span>🎨 <strong>Board Design</strong></span>
+                <div style="display: flex; gap: 10px; margin-top: 10px; align-items: center;">
+                    <label>Hell:</label>
+                    <input type="color" id="colorWhite" value="#f0d9b5">
+                    <label>Dunkel:</label>
+                    <input type="color" id="colorBlack" value="#b58863">
+                </div>
+            </div>
+
+            <div class="glass-panel">
+                <div class="mode-select">
+                    <span>🎮 <strong>Spielmodus</strong></span>
+                    <select id="gameMode">
+                        <option value="local">Lokal (2 Spieler am Gerät)</option>
+                        <option value="bot">Gegen den Bot (Smart)</option>
+                        <option value="stockfish">Gegen Bot (Extrem 🔥)</option>
+                        <option value="random">Zufälliger Gegner (Suche)</option>
+                        <option value="online">Online (Privat)</option>
+                    </select>
+                </div>
+                <div class="room-controls">
+                    <input type="text" id="roomID" placeholder="Raum ID eingeben">
+                    <button id="connectMP">Beitreten</button>
+                </div>
+            </div>
+
+            <div id="chat-container">
+    <div id="chat-messages"></div>
+    <div class="chat-input-area" style="position: relative;"> <div class="emoji-bar">
+        <span class="emoji-btn">😊</span><span class="emoji-btn">😂</span>
+        <span class="emoji-btn">🔥</span><span class="emoji-btn">👍</span>
+        <span class="emoji-btn">♟️</span><span class="emoji-btn">⚔️</span>
+    </div>
+
+    <div style="display: flex; gap: 5px; align-items: center; position: relative;">
+        <button id="emote-menu-btn" style="padding: 5px 10px; cursor: pointer; background: #eee; border: 1px solid #ccc; border-radius: 4px;">...</button>
+        
+        <div id="emote-popup" style="display: none; position: absolute; bottom: 110%; left: 0; background: white; border: 2px solid #444; border-radius: 8px; box-shadow: 0 8px 20px rgba(0,0,0,0.3); z-index: 9999; width: 160px; padding: 5px;">
+            <button class="emote-btn" data-msg="Viel Glück! 🍀" style="width: 100%; text-align: left; padding: 10px; border: none; background: none; cursor: pointer; font-size: 14px; border-bottom: 1px solid #eee;">Viel Glück! 🍀</button>
+            <button class="emote-btn" data-msg="Guter Zug! 👏" style="width: 100%; text-align: left; padding: 10px; border: none; background: none; cursor: pointer; font-size: 14px; border-bottom: 1px solid #eee;">Guter Zug! 👏</button>
+            <button class="emote-btn" data-msg="Ups! 😅" style="width: 100%; text-align: left; padding: 10px; border: none; background: none; cursor: pointer; font-size: 14px; border-bottom: 1px solid #eee;">Ups! 😅</button>
+            <button class="emote-btn" data-msg="Danke! 😊" style="width: 100%; text-align: left; padding: 10px; border: none; background: none; cursor: pointer; font-size: 14px; border-bottom: 1px solid #eee;">Danke! 😊</button>
+            <button class="emote-btn" data-msg="Gutes Spiel! 🤝" style="width: 100%; text-align: left; padding: 10px; border: none; background: none; cursor: pointer; font-size: 14px;">Gutes Spiel! 🤝</button>
+        </div>
+
+        <input type="text" id="chat-input" placeholder="Nachricht..." style="flex-grow: 1;">
+        <button id="send-chat">Senden</button>
+    </div>
+</div>
+</div>
+
+            <div class="glass-panel">
+                <span>🏆 <strong>Beste Spieler</strong></span>
+                <div id="leaderboard-list" style="margin-top: 10px; font-size: 0.9em;"></div>
+                <a href="stats.html" style="color: #3498db; text-decoration: none; font-size: 0.8em; margin-top: 10px; display: block; text-align: center;">📊 Volle Rangliste ansehen</a>
+            </div>
+
+            <div class="glass-panel">
+                <span>💬 <strong>Community</strong></span>
+                <a href="chat.html" style="display: block; background: #3498db; color: white; text-align: center; padding: 10px; border-radius: 8px; text-decoration: none; margin-top: 10px; font-weight: bold;">
+                    🌐 Zum Globalen Chatroom
+                </a>
+            </div>
+        </div>
+    </div>
+    <div id="videoModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:9999; justify-content:center; align-items:center;">
+    <div style="background:#222; padding:20px; border-radius:10px; position:relative; max-width:80%;">
+        <span onclick="document.getElementById('videoModal').style.display='none'" style="position:absolute; top:10px; right:20px; color:white; cursor:pointer; font-size:30px;">&times;</span>
+        <video id="player" controls width="100%"></video>
+    </div>
+</div>
+
+<script>
+function playVideo(url) {
+    const modal = document.getElementById('videoModal');
+    const player = document.getElementById('player');
+    player.src = url;
+    modal.style.display = 'flex';
+    player.play();
+}
+</script>
+    
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <script type="module" src="script2.js"></script>
+    <script src="script.js"></script>
+
+    <canvas id="glCanvas" style="position:fixed; top:0; left:0; width:100vw; height:100vh; z-index:-1; pointer-events:none;"></canvas>
+
+    <script id="fragmentShader" type="x-shader/x-fragment">
+        precision highp float;
+        uniform float time;
+        uniform vec2 resolution;
+
+        float wave(vec2 p, float t) {
+            float v = sin(p.x * 8.0 + t) + sin((p.y + t) * 0.5) + sin((p.x + p.y + t) * 0.5);
+            return v;
+        }
+
+        void main() {
+            vec2 uv = gl_FragCoord.xy / resolution.xy;
+            vec2 p = -1.0 + 2.0 * uv;
+            p.x *= resolution.x / resolution.y;
+            float t = time * 0.3;
+            float v = wave(p, t);
+            vec3 color = vec3(0.05, 0.1, 0.35) + 0.15 * sin(v + vec3(0.0, 2.0, 4.0));
+            color *= (1.0 - length(p * 0.6));
+            gl_FragColor = vec4(color, 1.0);
+        }
+    </script>
+
+    <script>
+        (function() {
+            const canvas = document.getElementById('glCanvas');
+            const gl = canvas.getContext('webgl');
+            if (!gl) return;
+
+            const vs = gl.createShader(gl.VERTEX_SHADER);
+            gl.shaderSource(vs, `attribute vec4 p; void main(){gl_Position=p;}`);
+            gl.compileShader(vs);
+
+            const fs = gl.createShader(gl.FRAGMENT_SHADER);
+            gl.shaderSource(fs, document.getElementById('fragmentShader').text);
+            gl.compileShader(fs);
+
+            const prog = gl.createProgram();
+            gl.attachShader(prog, vs); gl.attachShader(prog, fs);
+            gl.linkProgram(prog); gl.useProgram(prog);
+
+            const buf = gl.createBuffer();
+            gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1,1,-1,-1,1,-1,1,1,-1,1,1]), gl.STATIC_DRAW);
+
+            const pLoc = gl.getAttribLocation(prog, "p");
+            gl.enableVertexAttribArray(pLoc);
+            gl.vertexAttribPointer(pLoc, 2, gl.FLOAT, false, 0, 0);
+
+            const tLoc = gl.getUniformLocation(prog, "time");
+            const rLoc = gl.getUniformLocation(prog, "resolution");
+
+            function render(now) {
+                canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+                gl.viewport(0, 0, canvas.width, canvas.height);
+                gl.uniform1f(tLoc, now * 0.001);
+                gl.uniform2f(rLoc, canvas.width, canvas.height);
+                gl.drawArrays(gl.TRIANGLES, 0, 6);
+                requestAnimationFrame(render);
+            }
+            requestAnimationFrame(render);
+        })();
+    </script>
+    <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "Mein Schach",
+  "operatingSystem": "Web",
+  "applicationCategory": "GameApplication",
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "EUR"
+  },
+  "aggregateRating": {
+    "@type": "AggregateRating",
+    "ratingValue": "4.8",
+    "ratingCount": "124"
+  },
+  "author": {
+    "@type": "Person",
+    "name": "Max"
+  },
+  "description": "Spiele Online-Schach gegen Freunde oder zufällige Gegner. Kostenlos, direkt im Browser und ohne Anmeldung."
+}
+</script>
+    <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "Schach Live | Profi-Schach",
+  "url": "https://max-code01.github.io/mein-schach/",
+  "operatingSystem": "All",
+  "applicationCategory": "GameApplication",
+  "browserRequirements": "Requires HTML5 support",
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "EUR"
+  },
+  "aggregateRating": {
+    "@type": "AggregateRating",
+    "ratingValue": "4.9",
+    "ratingCount": "150"
+  },
+  "author": {
+    "@type": "Person",
+    "name": "Max"
+  },
+  "description": "Spiele Profi-Schach live gegen Freunde oder KI. Mit Echtzeit-Statistiken, Leaderboard und moderner Analyse direkt im Browser."
+}
+</script>
+    
+</body>
+</html>

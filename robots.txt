@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+
+# Der direkte Weg für Google zur Sitemap
+Sitemap: https://max-code01.github.io/mein-schach/sitemap.xml

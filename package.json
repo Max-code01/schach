@@ -1,0 +1,41 @@
+{
+  "name": "schach-multiplayer",
+  "version": "1.1.0",
+  "description": "High-End Schach mit Rust-Engine, Python-Analyse, Live-Chat und automatischem Discord-Backup",
+  "main": "server.js",
+  "author": "Max",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "cors": "^2.8.5",
+    "@supabase/supabase-js": "^2.42.0",
+    "axios": "^1.6.8",
+    "form-data": "^4.0.0",
+    "ws": "^8.16.0",
+    "nodemailer": "^6.9.13",
+    "canvas": "^3.0.0",
+    "fluent-ffmpeg": "^2.1.2",
+    "dotenv": "^16.4.5",
+    "replicate": "^0.30.0"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "keywords": [
+    "chess",
+    "rust",
+    "python",
+    "multiplayer",
+    "websocket",
+    "backup",
+    "video-export"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/max-code01/mein-schach"
+  }
+}

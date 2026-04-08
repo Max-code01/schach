@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <title>Prochess Chat | Fullscreen</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            height: 100vh;
+            color: white;
+            background: #000;
+        }
+
+        /* Hintergrund-Canvas */
+        #glCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        /* HAUPT-CONTAINER: Füllt jetzt alles aus */
+        .chat-layout {
+            width: 100%;
+            max-width: 1200px; /* Begrenzt die Breite auf großen Monitoren für bessere Lesbarkeit */
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(15px);
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            box-sizing: border-box;
+            gap: 15px;
+            border-left: 1px solid rgba(255, 255, 255, 0.1);
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* Header Steuerung */
+        .header-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        input, select, button {
+            background: rgba(20, 20, 20, 0.8);
+            border: 1px solid #444;
+            color: white;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 0.95em;
+        }
+
+        input:focus { border-color: #28a745; outline: none; }
+
+        .btn-green { background: #28a745; border: none; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .btn-green:hover { background: #218838; transform: scale(1.02); }
+
+        /* CHAT BEREICH */
+        #chat-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            min-height: 0;
+        }
+
+        #chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .chat-msg { 
+            background: rgba(255,255,255,0.05); 
+            padding: 12px 16px; 
+            border-radius: 8px; 
+            border-left: 4px solid #3498db;
+            max-width: 90%;
+        }
+        .chat-msg strong { color: #3498db; display: block; margin-bottom: 4px; }
+
+        .chat-input-area {
+            padding: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(0,0,0,0.2);
+        }
+
+        .emoji-bar {
+            margin-bottom: 12px;
+            font-size: 1.5em;
+            display: flex;
+            gap: 15px;
+        }
+        .emoji-btn { cursor: pointer; transition: 0.2s; }
+        .emoji-btn:hover { transform: scale(1.2); }
+
+        /* Leaderboard & Footer */
+        .footer-area {
+            display: flex;
+            gap: 15px;
+            max-height: 100px;
+        }
+
+        .mini-leaderboard {
+            flex: 1;
+            overflow-y: auto;
+            font-size: 0.9em;
+        }
+
+        /* AGB Popup */
+        #agb-popup {
+            display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9); align-items: center; justify-content: center; backdrop-filter: blur(8px);
+        }
+        .popup-content { background: #1a1a1a; padding: 30px; border-radius: 15px; text-align: center; border: 2px solid #28a745; max-width: 400px; }
+    </style>
+</head>
+<body>
+
+    <canvas id="glCanvas"></canvas>
+
+    <div id="agb-popup">
+        <div class="popup-content">
+            <h2>Willkommen bei Prochess!</h2>
+            <p>Bitte akzeptiere die <a href="AGB.html" style="color:#3498db">AGB</a> zum Starten.</p>
+            <button class="btn-green" style="padding: 10px 20px;" onclick="acceptAGB()">Chat betreten</button>
+        </div>
+    </div>
+    
+    <div class="chat-layout">
+        <div class="glass-panel header-controls">
+            <div class="row">
+                <input type="text" id="playerName" placeholder="Name">
+                <input type="password" id="playerPass" placeholder="PW" style="width: 120px;">
+                <button id="saveAccountBtn" class="btn-green">Sichern</button>
+                <div id="save-status" style="font-size: 0.8em; color: #888; margin-left: 10px;"></div>
+            </div>
+            
+            <div class="row">
+                <select id="gameMode">
+                    <option value="bot">Global Chat</option>
+                    <option value="online">Privater Raum</option>
+                </select>
+                <input type="text" id="roomID" placeholder="Raum ID" style="width: 100px;">
+                <button id="connectMP" class="btn-green">Join</button>
+                <span id="user-counter" style="color: #28a745; font-weight: bold; margin-left: 15px;">● Online: 1</span>
+            </div>
+        </div>
+
+        <div id="chat-container">
+            <div id="chat-messages">
+                <div class="chat-msg"><strong>Admin:</strong> Willkommen im Prochess Fullscreen Chat! Viel Spaß beim Schreiben.</div>
+            </div>
+            
+            <div class="chat-input-area">
+                <div class="emoji-bar">
+                    <span class="emoji-btn">😊</span>
+                    <span class="emoji-btn">🔥</span>
+                    <span class="emoji-btn">⚔️</span>
+                    <span class="emoji-btn">👑</span>
+                    <span class="emoji-btn">😎</span>
+                    <span class="emoji-btn">♟️</span>
+                </div>
+                <div class="row" style="width: 100%;">
+                    <input type="text" id="chat-input" placeholder="!help für befehle." style="flex: 1;">
+                    <button id="send-chat" class="btn-green" style="padding: 10px 30px;">Senden</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer-area">
+            <div class="glass-panel mini-leaderboard">
+                <strong>🏆 Beste Spieler</strong>
+                <div id="leaderboard-list"></div>
+            </div>
+            <div class="glass-panel" style="display: flex; align-items: center; gap: 10px;">
+                <a href="stats.html" style="color: #3498db; text-decoration: none; font-size: 0.85em;">Rangliste</a>
+                <span style="color: rgba(255,255,255,0.3)">|</span>
+                <span style="font-size: 0.85em; color: #888;">Verion 2.0 - Chat-Mode</span>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+        const supabaseUrl = 'https://sfbubqwnuthicpenmwye.supabase.co'
+        const supabaseKey = 'sb_publishable_H-ZV5me7vxZN_fNPdQ0ifA_--7AdGnZ'
+        const supabase = createClient(supabaseUrl, supabaseKey)
+        window.supabase = supabase;
+
+        window.acceptAGB = function() {
+            localStorage.setItem('agbAkzeptiert', 'true');
+            document.getElementById('agb-popup').style.display = 'none';
+        };
+        if (!localStorage.getItem('agbAkzeptiert')) {
+            document.getElementById('agb-popup').style.display = 'flex';
+        }
+    </script>
+    <script src="script.js"></script>
+
+    <script id="fragmentShader" type="x-shader/x-fragment">
+        precision highp float;
+        uniform float time;
+        uniform vec2 resolution;
+        float wave(vec2 p, float t) {
+            return sin(p.x * 5.0 + t) + sin((p.y + t) * 0.5);
+        }
+        void main() {
+            vec2 uv = gl_FragCoord.xy / resolution.xy;
+            vec2 p = -1.0 + 2.0 * uv;
+            p.x *= resolution.x / resolution.y;
+            float t = time * 0.2;
+            float v = wave(p, t);
+            vec3 color = vec3(0.02, 0.05, 0.15) + 0.05 * sin(v + vec3(0.0, 2.0, 4.0));
+            gl_FragColor = vec4(color, 1.0);
+        }
+    </script>
+    <script>
+        (function() {
+            const canvas = document.getElementById('glCanvas');
+            const gl = canvas.getContext('webgl');
+            if (!gl) return;
+            const vs = gl.createShader(gl.VERTEX_SHADER);
+            gl.shaderSource(vs, `attribute vec4 p; void main(){gl_Position=p;}`); gl.compileShader(vs);
+            const fs = gl.createShader(gl.FRAGMENT_SHADER);
+            gl.shaderSource(fs, document.getElementById('fragmentShader').text); gl.compileShader(fs);
+            const prog = gl.createProgram(); gl.attachShader(prog, vs); gl.attachShader(prog, fs);
+            gl.linkProgram(prog); gl.useProgram(prog);
+            const buf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1,1,-1,-1,1,-1,1,1,-1,1,1]), gl.STATIC_DRAW);
+            const pLoc = gl.getAttribLocation(prog, "p"); gl.enableVertexAttribArray(pLoc);
+            gl.vertexAttribPointer(pLoc, 2, gl.FLOAT, false, 0, 0);
+            const tLoc = gl.getUniformLocation(prog, "time"); const rLoc = gl.getUniformLocation(prog, "resolution");
+            function render(now) {
+                canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+                gl.viewport(0, 0, canvas.width, canvas.height);
+                gl.uniform1f(tLoc, now * 0.001); gl.uniform2f(rLoc, canvas.width, canvas.height);
+                gl.drawArrays(gl.TRIANGLES, 0, 6); requestAnimationFrame(render);
+            }
+            requestAnimationFrame(render);
+        })();
+    </script>
+</body>
+</html>

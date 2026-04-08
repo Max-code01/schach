@@ -1,0 +1,29 @@
+# ----------------------------------------------------------------------
+# 1. HTTPS-ZWANG (Sicherheit geht vor)
+# ----------------------------------------------------------------------
+RewriteEngine On
+RewriteCond %{HTTPS} off
+RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# ----------------------------------------------------------------------
+# 2. SPEED: CACHING (Bilder & Figuren speichern)
+# ----------------------------------------------------------------------
+<IfModule mod_expires.c>
+    ExpiresActive On
+    # Bilder (Schachfiguren) für 1 Monat im Browser speichern
+    ExpiresByType image/jpg "access plus 1 month"
+    ExpiresByType image/png "access plus 1 month"
+    ExpiresByType image/svg+xml "access plus 1 month"
+    # Scripte für 1 Woche speichern
+    ExpiresByType text/javascript "access plus 1 week"
+    ExpiresByType text/css "access plus 1 week"
+</IfModule>
+
+# ----------------------------------------------------------------------
+# 3. DIE BLACKLIST (Hier landen die Hacker-IPs)
+# ----------------------------------------------------------------------
+<RequireAll>
+    Require all granted
+    # Ab hier kommen die gesperrten IPs rein:
+    # Deny from 123.456.78.9
+</RequireAll>

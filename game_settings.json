@@ -1,0 +1,18 @@
+{
+  "project_name": "Ultimate Chess",
+  "database_sync": true,
+  "initial_stats": {
+    "default_elo": 1500,
+    "starting_wins": 0
+  },
+  "ui_theme": {
+    "primary_color": "#00ff00",
+    "background": "dark-mode",
+    "show_online_status": true
+  },
+  "top_players_reference": [
+    "Max",
+    "ZeroMercy",
+    "Prüfen"
+  ]
+}
