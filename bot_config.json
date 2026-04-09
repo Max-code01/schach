@@ -1,0 +1,12 @@
+{
+  "keywords": ["Schach Strategie", "Chess Engine", "Schach spielen"],
+  "messages": [
+    "Hey, hab gerade dieses neue Schach-Tool entdeckt: [DEIN LINK]",
+    "Kennt ihr schon die neue Radar-App für Schach? Echt krass: [DEIN LINK]",
+    "Falls jemand eine gute Chess-Webseite sucht: [DEIN LINK]"
+  ],
+  "user_agents": [
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/110.0.0.0",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) Safari/537.36"
+  ]
+}
