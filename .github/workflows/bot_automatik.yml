@@ -1,0 +1,19 @@
+name: Schach Bot Automatik
+on:
+  schedule:
+    - cron: '0 * * * *' # Läuft jede volle Stunde automatisch
+  workflow_dispatch: # Erlaubt dir, den Bot manuell per Klick zu starten
+
+jobs:
+  run-bot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      - name: Install Puppeteer
+        run: npm install puppeteer
+      - name: Start Bot
+        run: node automatik_bot.js
